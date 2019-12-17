@@ -1,0 +1,1347 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+#replace first line of this script with the following line if using termux
+#!/data/data/com.termux/files/usr/bin/bash
+
+#replace first line of this script with the following line if not using termux like a linux distro
+#!/bin/bash
+
+#title:         tasker_package_utils
+#description:   various tasker package utils
+#author:        agnostic-apollo
+#usage:         run "bash tasker_package_utils --help"
+#date:          18-Dec-2019
+#bash version:  4.0 or higher
+#credits:       -
+#license:       MIT License
+version=1.0
+
+
+##### Install Instructions For Termux In Android:
+
+#The `tasker_package_utils` file should be placed in termux `bin` directory `/data/data/com.termux/files/usr/bin` and it should have `termux` uid:gid ownership and have executable `700` permission before it can be run in the termux terminal without specifying its path.
+#1. Copy the file to termux bin directory:
+#   Either `cd` to the download/extraction directory and run following commands
+#
+#   ```
+#   cat tasker_package_utils > /data/data/com.termux/files/usr/bin/tasker_package_utils
+#   ```
+#
+#   Or use a file browser like root explorer to copy the file to the termux bin directory.
+#
+#2. Set correct ownership and permission:
+#   Either run following commands to set them automatically, requires su binary to be in `$PATH`.
+#
+#   ```
+#   export termux_bin_path="/data/data/com.termux/files/usr/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; for f in tasker_package_utils; do if [ -f "$termux_bin_path/$f" ]; then su -c "chown $owner:$owner \"$termux_bin_path/$f\" && chmod 700 \"$termux_bin_path/$f\""; fi; done;
+#   ```
+#
+#   Or manually set them with your file browser. You can find `termux` `uid` and `gid` by running the command `id -u` in a non root shell in termux or by checking the properties of the termux `bin` directory from your file browser.
+#
+#You can run the script placed in the current directory without setting the ownership and permission by running the command `bash tasker_package_utils`.
+#If you are not running the script in termux, set the shebang of the script correctly (the first line of the script).
+
+#Usage:
+
+#Convert tasker user app to system privileged app in normal mode
+#this will uninstall tasker and you will loose all tasker data and desktop shortcuts
+#bash tasker_package_utils convert_system_priv -n
+
+#Convert tasker user app to system privileged app in dirty mode
+#this will not uninstall tasker and you will not loose any tasker data or desktop shortcuts
+#but this can leave the packages info of android system in an inconsistent state and you might have trouble uninstalling tasker
+#you may need to manually remove tasker apk to uninstall and remove "net.dinglisch.android.taskerm" tags from "/data/system/packages.xml"
+#bash tasker_package_utils convert_system_priv -d
+
+
+#Uninstall tasker
+#bash tasker_package_utils uninstall
+
+
+#Grant all uncommented permissions in the permissions_list array in tasker_package_utils script to tasker
+
+#run in a root shell in your android device like in termux
+#bash tasker_package_utils perms grant
+
+#or run over adb
+#bash tasker_package_utils perms -a grant
+
+#Grant specific permission to tasker
+
+#run in a root shell in your android device like in termux
+#bash tasker_package_utils perms grant "android.permission.READ_LOGS"
+
+#or run over adb
+#bash tasker_package_utils perms -a grant "android.permission.READ_LOGS"
+
+#if the permission passed does not contain a dot ".", then "android.permission." is automatically prefixed to it
+#bash tasker_package_utils perms grant "READ_LOGS"
+
+
+#Revoke all uncommented permissions in the permissions_list array in tasker_package_utils script to tasker
+
+#run in a root shell in your android device like in termux
+#bash tasker_package_utils perms revoke
+
+#or run over adb
+#bash tasker_package_utils perms -a revoke
+
+
+#Revoke specific permission from tasker
+
+#run in a root shell in your android device like in termux
+#bash tasker_package_utils perms revoke "android.permission.READ_LOGS"
+
+#or run over adb
+#bash tasker_package_utils perms -a revoke "android.permission.READ_LOGS"
+
+#if the permission passed does not contain a dot ".", then "android.permission." is automatically prefixed to it
+#bash tasker_package_utils perms -a revoke "READ_LOGS"
+
+
+#List all permissions granted to tasker. Wait a few seconds after permission is granted or revoked and tasker app is restarted for updates to take effect.
+
+#run in a root shell in your android device like in termux
+#bash tasker_package_utils perms list
+
+#or run over adb
+#bash tasker_package_utils perms -a list
+
+#or run over adb with root if permission denied errors are received
+#bash tasker_package_utils perms -r list
+
+#check if specific permission is granted to tasker
+#bash tasker_package_utils perms list | grep READ_LOGS
+
+
+#define user modifiable variables start
+
+#set permissions to grant or revoke
+#the permissions_list contains all permissions declared by tasker till version '5.9.rc.3'
+#uncomment lines for which you want to grant or revoke permissions by default if no parameters are passed \
+#to "tasker_package_utils perms grant|revoke" commands
+#If any permission does not contain a dot '.', then 'android.permission.' is automatically prefixed to it
+declare -ga permissions_list=(
+#"android.permission.ACCESS_COARSE_LOCATION"
+#"android.permission.ACCESS_FINE_LOCATION"
+#"android.permission.ACCESS_NETWORK_STATE"
+#"android.permission.ACCESS_NOTIFICATION_POLICY"
+#"android.permission.ACCESS_WIFI_STATE"
+#"android.permission.ACCESS_WIMAX_STATE"
+#"android.permission.ANSWER_PHONE_CALLS"
+#"android.permission.BLUETOOTH"
+#"android.permission.BLUETOOTH_ADMIN"
+#"android.permission.BODY_SENSORS"
+#"android.permission.CALL_PHONE"
+#"android.permission.CAMERA"
+#"android.permission.CAPTURE_AUDIO_OUTPUT"
+#"android.permission.CHANGE_CONFIGURATION"
+#"android.permission.CHANGE_NETWORK_STATE"
+#"android.permission.CHANGE_WIFI_STATE"
+#"android.permission.CHANGE_WIMAX_STATE"
+#"android.permission.DISABLE_KEYGUARD"
+#"android.permission.DUMP"
+#"android.permission.EXPAND_STATUS_BAR"
+#"android.permission.FOREGROUND_SERVICE"
+#"android.permission.GET_TASKS"
+#"android.permission.INTERNET"
+#"android.permission.KILL_BACKGROUND_PROCESSES"
+#"android.permission.MODIFY_AUDIO_SETTINGS"
+#"android.permission.MODIFY_PHONE_STATE"
+#"android.permission.NFC"
+#"android.permission.PACKAGE_USAGE_STATS"
+#"android.permission.PROCESS_OUTGOING_CALLS"
+#"android.permission.READ_CALENDAR"
+#"android.permission.READ_CALL_LOG"
+#"android.permission.READ_CLIPBOARD_IN_BACKGROUND"
+#"android.permission.READ_CONTACTS"
+"android.permission.READ_LOGS"
+#"android.permission.READ_PHONE_STATE"
+#"android.permission.READ_SMS"
+#"android.permission.READ_SYNC_SETTINGS"
+#"android.permission.RECEIVE_BOOT_COMPLETED"
+#"android.permission.RECEIVE_SMS"
+#"android.permission.RECORD_AUDIO"
+#"android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND"
+#"android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND"
+#"android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+#"android.permission.REQUEST_INSTALL_PACKAGES"
+#"android.permission.RESTART_PACKAGES"
+#"android.permission.SEND_SMS"
+#"android.permission.SET_MEDIA_KEY_LISTENER"
+#"android.permission.SET_PROCESS_LIMIT"
+#"android.permission.SET_TIME_ZONE"
+#"android.permission.SET_VOLUME_KEY_LONG_PRESS_LISTENER"
+#"android.permission.SET_WALLPAPER"
+#"android.permission.SET_WALLPAPER_COMPONENT"
+#"android.permission.SYSTEM_ALERT_WINDOW"
+#"android.permission.TETHER_PRIVILEGED"
+#"android.permission.USE_BIOMETRIC"
+#"android.permission.USE_FINGERPRINT"
+#"android.permission.VIBRATE"
+#"android.permission.WAKE_LOCK"
+#"android.permission.WRITE_CALENDAR"
+#"android.permission.WRITE_CALL_LOG"
+#"android.permission.WRITE_CONTACTS"
+#"android.permission.WRITE_EXTERNAL_STORAGE"
+#"android.permission.WRITE_SECURE_SETTINGS"
+#"android.permission.WRITE_SETTINGS"
+#"android.permission.WRITE_SMS"
+#"android.permission.WRITE_SYNC_SETTINGS"
+#"com.android.alarm.permission.SET_ALARM"
+#"com.android.phone.CHANGE_NETWORK_MODE"
+#"com.joaomgcd.taskersettings.SET_SETTING"
+#"com.latedroid.juicedefender.permission.CONTROL_JUICEDEFENDER"
+#"com.latedroid.juicedefender.permission.TOGGLE_MOBILE_DATA"
+#"cyanogenmod.permission.PUBLISH_CUSTOM_TILE"
+#"net.dinglisch.android.zoom.permission.MAKE_CHANGES"
+)
+
+#define user modifiable variables end
+
+
+#define default variables start
+#do not modify below values unless you know what you are doing
+
+command_type="" #default to no command
+conversion_mode="" #default to none
+
+run_mode="dev" #default to dev
+perms_mode="" #default to none
+permission="" #default to none
+
+tasker_package_utils_verbose_level=0 #default to log level 0
+tasker_package_utils_args_verbose_level=0 #set this to "1" manually, if you want to debug arguments received
+
+#set regexes for validation
+valid_number_regex='^[0-9]+$'
+valid_absolute_path_regex='^(/[^/]+)+$'
+
+package_name="net.dinglisch.android.taskerm"
+user_apk_install_path="/data/app"
+system_priv_apk_install_path="/system/priv-app"
+android_packages_xml_file="/data/system/packages.xml"
+android_runtime_permissions_xml_file="/data/system/users/0/runtime-permissions.xml"
+
+#define default variables end
+
+
+[[ x"${BASH_SOURCE[0]}" == x"$0" ]] && tasker_package_utils_exit_command="exit" || tasker_package_utils_exit_command="return"
+
+function tasker_package_utils_log () { local log_level="${1}"; shift; if [[ $tasker_package_utils_verbose_level -ge $log_level ]]; then echo "$@"; fi }
+function tasker_package_utils_log_literal () { local log_level="${1}"; shift; if [[ $tasker_package_utils_verbose_level -ge $log_level ]]; then echo -e "$@"; fi }
+function tasker_package_utils_log_errors () { echo "$@" 1>&2; }
+function tasker_package_utils_log_args () { if [[ $tasker_package_utils_args_verbose_level -ge "1" ]]; then echo "$@"; fi }
+function tasker_package_utils_log_arg_errors () { echo "$@" 1>&2; }
+
+
+tasker_package_utils_main() {
+
+	local return_value
+
+	#process the command or options passed to tasker_package_utils
+	process_tasker_package_utils_parameters "$@"
+
+	#run command
+	if [ -z "$command_type" ]; then
+		show_tasker_package_utils_help
+		$tasker_package_utils_exit_command 0
+	elif [[ "$command_type" != *,* ]] && [[ ",convert_system_priv,convert_user,uninstall,perms," == *",$command_type,"* ]]; then
+		tasker_package_utils_log_literal 1 "Running $command_type command"
+		tasker_package_utils_"$command_type"
+		return_value=$?
+	else
+		tasker_package_utils_log_errors "Unknown command type $command_type"
+		exit_tasker_package_utils_on_error
+	fi
+	if [ $return_value -ne 0 ]; then
+		tasker_package_utils_log_literal 1 "\ntasker_package_utils failed"
+	else
+		tasker_package_utils_log_literal 1 "\ntasker_package_utils successful"
+	fi
+
+	$tasker_package_utils_exit_command $return_value
+
+}
+
+tasker_package_utils_convert_system_priv() {
+
+	local return_value
+
+	tasker_package_utils_log_literal 1 "\nStarting tasker_package_utils_convert_system_priv with conversion_mode \"$conversion_mode\""
+
+	tasker_package_utils_log 2 "conversion_mode = \"$conversion_mode\""
+
+	#if conversion_mode set is empty or not valid
+	if [ -z "$conversion_mode" ] || \
+		[[ "$conversion_mode" == *,* ]] || \
+			[[ ! ",normal,dirty," == *",$conversion_mode,"* ]]; then
+		tasker_package_utils_log_errors "The conversion_mode  \"$conversion_mode\" set is invalid"
+		return 1
+	fi
+
+	tasker_package_utils_log 0 "Checking if any app is being updated"
+
+	if [[ "$(find "$user_apk_install_path" -mindepth 1 -maxdepth 1 -type d -name "vmdl*.tmp" | wc -l)" != "0" ]]; then
+		tasker_package_utils_log_errors "An app seems to be updating at the moment, wait till its finished since it could be tasker"
+		return 0
+	fi
+
+	tasker_package_utils_log 0 "Checking if tasker is already installed as a system privileged app"
+
+	output="$(find "$system_priv_apk_install_path" -mindepth 1 -maxdepth 1 -type d -name "*$package_name*" 2>&1)"
+	return_value=$?
+	if [ $return_value -ne 0 ]; then
+		tasker_package_utils_log_errors "$output"
+		tasker_package_utils_log_errors "Failed to run find to find if tasker is already installed as a system privileged app"
+		return $return_value
+	fi
+
+	#this is needed because find subshell removes trailing newlines resulting in wrong results for wc command
+	if [ ! -z "$output" ]; then
+		output="$output"$'\n'
+	fi
+
+	if [[ "$(echo -n "$output" | wc -l)" != "0" ]]; then
+		tasker_package_utils_log_errors "$output"
+		tasker_package_utils_log_errors "Tasker seems to be already installed as a system privileged app"
+		return 0
+	fi
+
+	tasker_package_utils_log 0 "Finding tasker user apk path"
+
+	output="$(find "$user_apk_install_path" -mindepth 1 -maxdepth 1 -type d -name "$package_name-*" 2>&1)"
+	return_value=$?
+	if [ $return_value -ne 0 ]; then
+		tasker_package_utils_log_errors "$output"
+		tasker_package_utils_log_errors "Failed to find tasker user apk path"
+		return $return_value
+	fi
+
+	#this is needed because find subshell removes trailing newlines resulting in wrong results for wc command
+	if [ ! -z "$output" ]; then
+		output="$output"$'\n'
+	fi
+
+	tasker_user_apk_path_count="$(echo -n "$output" | wc -l)"
+
+	if [[ "$tasker_user_apk_path_count" == "0" ]]; then
+		tasker_package_utils_log_errors "$output"
+		tasker_package_utils_log_errors "tasker user apk path not found"
+		return 1
+	elif [[ "$tasker_user_apk_path_count" == "1" ]]; then
+		tasker_user_apk_path="$(echo "$output")" #remove trailing newlines
+		tasker_package_utils_log 0 "tasker_user_apk_path = \"$tasker_user_apk_path\""
+	else
+		tasker_package_utils_log_errors "$output"
+		tasker_package_utils_log_errors "Possibly more than one tasker user apk paths found"
+		return 1
+	fi
+
+	if [ ! -d "$tasker_user_apk_path" ]; then
+		tasker_package_utils_log_errors "tasker_user_apk_path is not a directory"
+		return 1
+	fi
+
+	tasker_system_priv_apk_path="$system_priv_apk_install_path/$package_name"
+	tasker_package_utils_log 0 "tasker_system_priv_apk_path = \"$tasker_system_priv_apk_path\""
+
+	tasker_package_utils_log 0 "Remounting system as rw"
+	mount -o rw,remount /system
+	return_value=$?
+	if [ $return_value -ne 0 ]; then
+		tasker_package_utils_log_errors "Failed to remount system as rw"
+		return $return_value
+	fi
+
+	tasker_package_utils_log 0 "Converting tasker user app to system privileged app"
+
+	#if conversion_mode is "dirty"
+	if [[ "$conversion_mode" == "dirty" ]]; then
+
+		tasker_package_utils_log 0 "Force Stopping tasker"
+
+		if [[ "$SHELL" == *"com.termux"* ]]; then
+			(
+			unset LD_PRELOAD; unset LD_LIBRARY_PATH;
+			/system/bin/am force-stop "$package_name"
+			)
+		else
+			/system/bin/am force-stop "$package_name"
+		fi
+		return_value=$?
+		if [ $return_value -ne 0 ]; then
+			tasker_package_utils_log_errors "Failed to force stop tasker"
+			return $return_value
+		fi
+
+		#wait for tasker to be fully force-stopped
+		sleep 3
+
+		tasker_package_utils_log 0 "Moving \"$tasker_user_apk_path\" to \"$tasker_system_priv_apk_path\""
+
+		mv "$tasker_user_apk_path" "$tasker_system_priv_apk_path"
+		return_value=$?
+		if [ $return_value -ne 0 ]; then
+			tasker_package_utils_log_errors "Failed to move tasker app from \"$tasker_user_apk_path\" to \"$tasker_system_priv_apk_path\""
+			return $return_value
+		fi
+		
+	#else 
+	else
+		tasker_package_utils_log 0 "Copying \"$tasker_user_apk_path\" to \"$tasker_system_priv_apk_path\""
+
+		cp -a "$tasker_user_apk_path" "$tasker_system_priv_apk_path"
+		return_value=$?
+		if [ $return_value -ne 0 ]; then
+			tasker_package_utils_log_errors "Failed to copy tasker app from \"$tasker_user_apk_path\" to \"$tasker_system_priv_apk_path\""
+			return $return_value
+		fi
+
+		tasker_package_utils_log 0 "Uninstalling tasker"
+
+		if [[ "$SHELL" == *"com.termux"* ]]; then
+			(
+			unset LD_PRELOAD; unset LD_LIBRARY_PATH;
+			/system/bin/pm uninstall "$package_name"
+			)
+		else
+			/system/bin/pm uninstall "$package_name"
+		fi
+		return_value=$?
+		if [ $return_value -ne 0 ]; then
+			tasker_package_utils_log_errors "Failed to uninstall tasker"
+			return $return_value
+		fi
+
+	fi
+
+	tasker_package_utils_log 0 "Setting permissions and ownership of \"$tasker_system_priv_apk_path\""
+
+	chown -R root:root "$tasker_system_priv_apk_path"
+	return_value=$?
+	if [ $return_value -ne 0 ]; then
+		tasker_package_utils_log_errors "Failed to set root:root ownership to \"$tasker_system_priv_apk_path\""
+		return $return_value
+	fi
+
+	find "$tasker_system_priv_apk_path" -type d -print0 | xargs -0 -r -- chmod 0755 --
+	return_value=$?
+	if [ $return_value -ne 0 ]; then
+		tasker_package_utils_log_errors "Failed to set 0755 permissions to subdirectories of \"$tasker_system_priv_apk_path\""
+		return $return_value
+	fi
+
+	find "$tasker_system_priv_apk_path" -type f -print0 | xargs -0 -r -- chmod 0644 --
+	return_value=$?
+	if [ $return_value -ne 0 ]; then
+		tasker_package_utils_log_errors "Failed to set 0644 permissions to subfiles of \"$tasker_system_priv_apk_path\""
+		return $return_value
+	fi
+
+	tasker_package_utils_log 0 "Remounting system as ro"
+	mount -o ro,remount /system
+	return_value=$?
+	if [ $return_value -ne 0 ]; then
+		tasker_package_utils_log_errors "Failed to remount system as ro"
+		return $return_value
+	fi
+
+	tasker_package_utils_log 0 "Reboot your phone for changes to take effect"
+
+	tasker_package_utils_log 0 "complete"
+
+	return $return_value
+
+}
+
+tasker_package_utils_convert_user() {
+
+	local return_value
+
+	tasker_package_utils_log 0 "Currently unsupported"
+
+}
+
+tasker_package_utils_uninstall() {
+
+	local return_value
+
+	tasker_package_utils_log 0 "Uninstalling tasker"
+
+	if [[ "$SHELL" == *"com.termux"* ]]; then
+		(
+		unset LD_PRELOAD; unset LD_LIBRARY_PATH;
+		/system/bin/pm uninstall "$package_name"
+		)
+	else
+		/system/bin/pm uninstall "$package_name"
+	fi
+	return_value=$?
+	if [ $return_value -ne 0 ]; then
+		tasker_package_utils_log_errors "Failed to uninstall tasker"
+		return $return_value
+	fi
+
+	tasker_system_priv_apk_path="$system_priv_apk_install_path/$package_name"
+	
+	if [ -d "$tasker_system_priv_apk_path" ]; then
+
+		tasker_package_utils_log 0 "tasker_system_priv_apk_path = \"$tasker_system_priv_apk_path\""
+
+		tasker_package_utils_log 0 "Remounting system as rw"
+		mount -o rw,remount /system
+		return_value=$?
+		if [ $return_value -ne 0 ]; then
+			tasker_package_utils_log_errors "Failed to remount system as rw"
+			return $return_value
+		fi
+
+		tasker_package_utils_log 0 "Removing \"$tasker_system_priv_apk_path\""
+
+		rm -rf "$tasker_system_priv_apk_path"
+		return_value=$?
+		if [ $return_value -ne 0 ]; then
+			tasker_package_utils_log_errors "Failed to remove \"$tasker_system_priv_apk_path\""
+			return $return_value
+		fi
+
+		tasker_package_utils_log 0 "Remounting system as ro"
+		mount -o ro,remount /system
+		return_value=$?
+		if [ $return_value -ne 0 ]; then
+			tasker_package_utils_log_errors "Failed to remount system as ro"
+			return $return_value
+		fi
+
+		tasker_package_utils_log 0 "Reboot your phone for changes to take effect"
+	fi
+
+	tasker_package_utils_log 0 "complete"
+
+	return 0
+
+}
+
+tasker_package_utils_perms() {
+
+	local return_value
+
+	tasker_package_utils_log_literal 1 "\nStarting tasker_package_utils_perms"
+
+	#if run_mode set is empty or not valid
+	if [ -z "$run_mode" ] || \
+		[[ "$run_mode" == *,* ]] || \
+			[[ ! ",dev,adb,adb_root," == *",$run_mode,"* ]]; then
+		tasker_package_utils_log_errors "The run_mode  \"$run_mode\" set is invalid"
+		return 1
+	fi
+
+	#if perms_mode set is empty or not valid
+	if [ -z "$perms_mode" ] || \
+		[[ "$perms_mode" == *,* ]] || \
+			[[ ! ",grant,revoke,list," == *",$perms_mode,"* ]]; then
+		tasker_package_utils_log_errors "The perms_mode  \"$perms_mode\" set is invalid"
+		return 1
+	fi
+
+	tasker_package_utils_log 2 "run_mode = \"$run_mode\""
+	tasker_package_utils_log 2 "perms_mode = \"$perms_mode\""
+
+	#if perms_mode is "grant" or "revoke"
+	if [[ "$perms_mode" == "grant" ]] || [[ "$perms_mode" == "revoke" ]]; then
+
+		tasker_package_utils_log 1 "${#permissions_list[@]} permissions set"
+		tasker_package_utils_log 1 ""
+
+		#grant or revoke all permissions in permissions_list array
+		for i in "${!permissions_list[@]}"; do
+			permission="${permissions_list[$i]}"
+
+			#if the permission does not contain a dot ".", then prefix it with "android.permission."
+		    if [[ "$permission" != *"."* ]]; then
+		        permission="android.permission.$permission"
+		    fi
+
+			tasker_package_utils_log 0 "Processing permission $(( i + 1)) \"$permission\""
+
+			#if empty
+			if [ -z "$permission" ]; then
+				tasker_package_utils_log 2 "Skipping since permission is not set"
+				continue
+			fi
+
+			#if run_mode is "dev"
+			if [[ "$run_mode" == "dev" ]]; then
+				pm "$perms_mode" "$package_name" "$permission"
+			#if run_mode is "adb"
+			elif [[ "$run_mode" == "adb" ]]; then
+				adb shell pm "$perms_mode" "$package_name" "$permission"
+			#if run_mode is "adb_root"
+			elif [[ "$run_mode" == "adb_root" ]]; then
+				adb shell "su -c pm \"$perms_mode\" \"$package_name\" \"$permission\""
+			else
+				tasker_package_utils_log_errors "run_mode \"$run_mode\" not handled"
+				return 1
+			fi
+			return_value=$?
+			if [ $return_value -ne 0 ]; then
+				tasker_package_utils_log_errors "Failed to $perms_mode permission \"$permission\""
+				return $return_value
+			fi
+		done
+
+		tasker_package_utils_log 0 "Restarting tasker"
+
+		#if run_mode is "dev"
+		if [[ "$run_mode" == "dev" ]]; then
+			if [[ "$SHELL" == *"com.termux"* ]]; then
+				(
+				unset LD_PRELOAD; unset LD_LIBRARY_PATH;
+				/system/bin/am force-stop "$package_name"
+				/system/bin/am start -n "$package_name/$package_name.Tasker"
+				)
+			else
+				/system/bin/am force-stop "$package_name"
+				/system/bin/am start -n "$package_name/$package_name.Tasker"
+			fi
+		#if run_mode is "adb"
+		elif [[ "$run_mode" == "adb" ]]; then
+			adb shell am force-stop "$package_name"
+			adb shell am start -n "$package_name/$package_name.Tasker"
+		#if run_mode is "adb_root"
+		elif [[ "$run_mode" == "adb_root" ]]; then
+			adb shell "su -c am force-stop \"$package_name\""
+			adb shell "su -c am start -n \"$package_name/$package_name.Tasker\""
+		else
+			tasker_package_utils_log_errors "run_mode \"$run_mode\" not handled"
+			return 1
+		fi
+
+	#if perms_mode is "list"
+	elif [[ "$perms_mode" == "list" ]]; then
+
+		#if run_mode is "dev"
+		if [[ "$run_mode" == "dev" ]]; then
+			android_packages_xml_file_for_sed="$android_packages_xml_file"
+			android_runtime_permissions_xml_file_for_sed="$android_runtime_permissions_xml_file"
+
+		#if run_mode is "adb" or "adb_root"
+		elif [[ "$run_mode" == "adb" ]] || [[ "$run_mode" == "adb_root" ]]; then
+			android_packages_xml_file_for_sed="packages.xml"
+			android_runtime_permissions_xml_file_for_sed="runtime-permissions.xml"
+
+			#remove android_packages_xml_file_for_sed
+			if [ -f "$android_packages_xml_file_for_sed" ]; then
+				rm "$android_packages_xml_file_for_sed"
+				return_value=$?
+				if [ $return_value -ne 0 ]; then
+					tasker_package_utils_log_errors "Failed to remove android_packages_xml_file_for_sed \"$android_packages_xml_file_for_sed\""
+					return $return_value
+				fi
+			fi
+
+			#remove android_runtime_permissions_xml_file_for_sed
+			if [ -f "$android_runtime_permissions_xml_file_for_sed" ]; then
+				rm "$android_runtime_permissions_xml_file_for_sed"
+				return_value=$?
+				if [ $return_value -ne 0 ]; then
+					tasker_package_utils_log_errors "Failed to remove android_runtime_permissions_xml_file_for_sed \"$android_runtime_permissions_xml_file_for_sed\""
+					return $return_value
+				fi
+			fi
+
+			#pull the android_packages_xml_file from the device so that commands can be run on the local shell instead of device
+
+			#if run_mode is "adb"
+			if [[ "$run_mode" == "adb" ]]; then
+				adb pull "$android_packages_xml_file" "$android_packages_xml_file_for_sed"
+				return_value=$?
+				if [ $return_value -ne 0 ]; then
+					tasker_package_utils_log_errors "Failed to run adb to pull android_packages_xml_file \"$android_packages_xml_file\""
+					return $return_value
+				fi
+
+				runtime_permissions_file_exists="$(adb shell "[ -f \"$android_runtime_permissions_xml_file\" ] && echo 1 || echo 0")"
+
+				if [[ "$runtime_permissions_file_exists" == "1" ]]; then
+				    adb pull "$android_runtime_permissions_xml_file" "$android_runtime_permissions_xml_file_for_sed"
+				    return_value=$?
+					if [ $return_value -ne 0 ]; then
+						tasker_package_utils_log_errors "Failed to run adb to pull android_runtime_permissions_xml_file \"$android_runtime_permissions_xml_file\""
+						return $return_value
+					fi
+				fi
+			#if run_mode is "adb_root"
+			elif [[ "$run_mode" == "adb_root" ]]; then
+				adb shell "su -c cat \"$android_packages_xml_file\"" > "$android_packages_xml_file_for_sed"
+				return_value=$?
+				if [ $return_value -ne 0 ]; then
+					tasker_package_utils_log_errors "Failed to run adb to pull android_packages_xml_file \"$android_packages_xml_file\""
+					return $return_value
+				fi
+
+				runtime_permissions_file_exists="$(adb shell "su -c [ -f \"$android_runtime_permissions_xml_file\" ] && echo 1 || echo 0")"
+
+				if [[ "$runtime_permissions_file_exists" == "1" ]]; then
+				    adb shell "su -c cat \"$android_runtime_permissions_xml_file\"" > "$android_runtime_permissions_xml_file_for_sed"
+					return_value=$?
+					if [ $return_value -ne 0 ]; then
+						tasker_package_utils_log_errors "Failed to run adb to pull android_runtime_permissions_xml_file \"$android_runtime_permissions_xml_file\""
+						return $return_value
+					fi
+				fi
+			else
+				tasker_package_utils_log_errors "run_mode \"$run_mode\" not handled"
+				return 1
+			fi
+		else
+			tasker_package_utils_log_errors "run_mode \"$run_mode\" not handled"
+			return 1
+		fi
+
+		tasker_package_utils_log 2 "android_packages_xml_file_for_sed = \"$android_packages_xml_file_for_sed\""
+
+		tasker_package_utils_log 1 "Extracting android packages tasker nodes from \"$android_packages_xml_file_for_sed\""
+
+		#convert newline characters to unix format
+		dos2unix --help 2>&1 | grep -qE -- "-q,[[:space:]]*--quiet"
+		if [ $? -eq 0 ]; then
+			dos2unix --quiet "$android_packages_xml_file_for_sed"
+		else
+			dos2unix "$android_packages_xml_file_for_sed"
+		fi
+		return_value=$?
+		if [ $return_value -ne 0 ]; then
+			subtitle_snippet_extractor_log_errors "Failed to run dos2unix on \"$android_packages_xml_file_for_sed\""
+			exit_after_cleanup $return_value
+		fi
+
+		#find all the permissions granted to an app from android_packages_xml_file
+		#use -E for extended regex, and -n to disable printing
+		#sed -nE '/^[[:space:]]*<(updated-)?package name="'"$package_name"'".*$ #match the <package name="package_name" or <updated-package name="package_name" line
+		#                   /{   #if matched start a subscript
+		#                   :a;  #create a label called a
+		#                   N;   #add next line to pattern space
+		#                   #if pattern space does not end with </package> or </updated-package> go to label a;
+		#                   /<\/(updated-)?package>$/!ba
+		#                   #if matches, then print pattern space
+		#                   p;
+		#                   }'
+		android_packages_tasker_node="$(sed -nE '/^[[:space:]]*<(updated-)?package name="'"$package_name"'".*$/{:a;N;/<\/(updated-)?package>$/!ba;p;}' "$android_packages_xml_file_for_sed")"
+		return_value=$?
+		if [ $return_value -ne 0 ]; then
+			tasker_package_utils_log_errors "Failed to run sed command to find android_packages_tasker_node from \"$android_packages_xml_file_for_sed\""
+			return $return_value
+		fi
+
+		#if android_packages_tasker_node file is empty
+		if [ -z "$android_packages_tasker_node" ]; then
+			tasker_package_utils_log_errors "Failed to find android packages tasker nodes in  \"$android_packages_xml_file_for_sed\""
+			return 1
+		fi
+
+		tasker_package_utils_log_literal 2 "\n\nandroid_packages_tasker_node:"
+		tasker_package_utils_log_literal 2 "\""
+		tasker_package_utils_log 2 "$android_packages_tasker_node"
+		tasker_package_utils_log_literal 2 "\"\n\n"
+
+		#if android_runtime_permissions_xml_file_for_sed exists
+		if [ -f "$android_runtime_permissions_xml_file_for_sed" ]; then
+
+			tasker_package_utils_log 1 "Extracting android runtime permission tasker node from \"$android_runtime_permissions_xml_file_for_sed\""
+			
+			#convert newline characters to unix format
+			dos2unix --help 2>&1 | grep -qE -- "-q,[[:space:]]*--quiet"
+			if [ $? -eq 0 ]; then
+				dos2unix --quiet "$android_runtime_permissions_xml_file_for_sed"
+			else
+				dos2unix "$android_runtime_permissions_xml_file_for_sed"
+			fi
+			return_value=$?
+			if [ $return_value -ne 0 ]; then
+				subtitle_snippet_extractor_log_errors "Failed to run dos2unix on \"$android_runtime_permissions_xml_file_for_sed\""
+				exit_after_cleanup $return_value
+			fi
+
+
+			#find all the permissions granted to an app from android_runtime_permissions_xml_file
+			#use -E for extended regex, and -n to disable printing
+			#sed -nE '/^[[:space:]]*<pkg name="'"$package_name"'">$ #match the <pkg name="package_name">" line
+			#                   /{   #if matched start a subscript
+			#                   :a;  #create a label called a
+			#                   N;   #add next line to pattern space
+			#                   #if pattern space does not end with </pkg> go to label a;
+			#                   /<\/pkg>$/!ba
+			#                   #if matches, then print pattern space
+			#                   p;
+			#                   }'
+			android_runtime_permissions_tasker_node="$(sed -nE '/^[[:space:]]*<pkg name="'"$package_name"'">$/{:a;N;/<\/pkg>$/!ba;p;}' "$android_runtime_permissions_xml_file_for_sed")"
+			return_value=$?
+			if [ $return_value -ne 0 ]; then
+				tasker_package_utils_log_errors "Failed to run sed command to find android_runtime_permissions_tasker_node from \"$android_runtime_permissions_xml_file_for_sed\""
+				return $return_value
+			fi
+
+			#if android_runtime_permissions_tasker_node file is not empty
+			if [ ! -z "$android_runtime_permissions_tasker_node" ]; then
+				tasker_package_utils_log_literal 2 "\n\nandroid_runtime_permissions_tasker_node:"
+				tasker_package_utils_log_literal 2 "\""
+				tasker_package_utils_log 2 "$android_runtime_permissions_tasker_node"
+				tasker_package_utils_log_literal 2 "\"\n\n"
+
+				#append android_runtime_permissions_tasker_node to android_packages_tasker_node
+				android_packages_tasker_node+=$'\n'"$android_runtime_permissions_tasker_node"
+			fi
+		else
+			tasker_package_utils_log 2 "android_runtime_permissions_xml_file_for_sed \"android_runtime_permissions_xml_file_for_sed\" does not exist"
+		fi
+
+		tasker_package_utils_log 1 "Extracting granted permissions"
+
+		#extract granted permissions to tasker from the tasker_config
+		#<item name="android.permission..." granted="true" flags="0" />
+		tasker_packages_granted_permissions="$(echo "$android_packages_tasker_node" | sed -nE 's/.*<item name="([^"]+)" granted="true" .* \/>/\1/gp;')"
+		return_value=$?
+		if [ $return_value -ne 0 ]; then
+			tasker_package_utils_log_errors "Failed to run sed to get permissions granted to tasker"
+			return $return_value
+		fi
+
+		#sorted permissions an remove duplicates
+		processed_tasker_packages_granted_permissions="$(echo "$tasker_packages_granted_permissions" | sort -n | uniq)"
+		return_value=$?
+		if [ $return_value -ne 0 ]; then
+			tasker_package_utils_log_errors "Failed to sort and remove duplicate entries of permissions granted to tasker"
+			return $return_value
+		fi
+
+		#output granted permissions to stdout
+		tasker_package_utils_log_literal 1 "\n\nGranted Permissions:"
+		tasker_package_utils_log_literal 1 "\""
+		echo "$processed_tasker_packages_granted_permissions"
+		tasker_package_utils_log_literal 1 "\"\n\n"
+
+		#if run_mode is "adb" or "adb_root"
+		if [[ "$run_mode" == "adb" ]] || [[ "$run_mode" == "adb_root" ]]; then
+			#remove android_packages_xml_file_for_sed
+			if [ ! -z "$android_packages_xml_file_for_sed" ] && [ -f "$android_packages_xml_file_for_sed" ]; then
+				rm "$android_packages_xml_file_for_sed"
+				:
+				return_value=$?
+				if [ $return_value -ne 0 ]; then
+					tasker_package_utils_log_errors "Failed to remove android_packages_xml_file_for_sed \"$android_packages_xml_file_for_sed\""
+					return $return_value
+				fi
+			fi
+
+			#remove android_runtime_permissions_xml_file_for_sed
+			if [ ! -z "$android_runtime_permissions_xml_file_for_sed" ] && [ -f "$android_runtime_permissions_xml_file_for_sed" ]; then
+				rm "$android_runtime_permissions_xml_file_for_sed"
+				:
+				return_value=$?
+				if [ $return_value -ne 0 ]; then
+					tasker_package_utils_log_errors "Failed to remove android_runtime_permissions_xml_file_for_sed \"$android_runtime_permissions_xml_file_for_sed\""
+					return $return_value
+				fi
+			fi
+		fi
+	else
+		tasker_package_utils_log_errors "perms_mode \"$perms_mode\" not handled"
+		return 1
+	fi
+
+	return 0
+
+}
+
+process_tasker_package_utils_parameters () {
+
+	#parse options to tasker_package_utils command
+	while getopts ":h-:" opt; do
+		case ${opt} in
+			-)
+				case "${OPTARG}" in
+					help)
+						tasker_package_utils_log_args "Parsing option: '--${OPTARG%=*}'"
+						show_tasker_package_utils_help
+						$tasker_package_utils_exit_command 0
+						;;
+					help*)
+						tasker_package_utils_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
+						exit_tasker_package_utils_on_error
+						;;
+					version)
+						tasker_package_utils_log_args "Parsing option: '--${OPTARG%=*}'"
+						echo "$version"
+						$tasker_package_utils_exit_command 0
+						;;
+					version*)
+						tasker_package_utils_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
+						exit_tasker_package_utils_on_error
+						;;
+					*)
+						tasker_package_utils_log_arg_errors "Unknown option '--${OPTARG%=*}'"
+						exit_tasker_package_utils_on_error
+						;;
+				esac
+				;;
+			h)
+				tasker_package_utils_log_args "Parsing option: '-${opt}'"
+				show_tasker_package_utils_help
+				$tasker_package_utils_exit_command 0
+				;;
+			\?)
+				tasker_package_utils_log_arg_errors "Unknown option: '-${OPTARG}'"
+				exit_tasker_package_utils_on_error
+				;;
+		esac
+	done
+	shift $((OPTIND -1)) #remove already processed arguments from argument list
+
+	sub_command=$1; shift  #remove sub_command from the argument list
+	#echo $sub_command
+	case "$sub_command" in
+		#parse options to the convert_system_priv sub command
+		convert_system_priv)
+			command_type="$sub_command"
+			tasker_package_utils_log_args "Parsing sub_command: '${sub_command}'"
+			optspec=":hvdn-:"
+			#process convert_system_priv command options
+			while getopts "$optspec" opt; do
+				case ${opt} in
+					-)
+						long_optargs="${OPTARG#*=}"
+						case "${OPTARG}" in
+							help)
+								tasker_package_utils_log_args "Parsing option: '--${OPTARG%=*}'"
+								show_tasker_package_utils_"$command_type"_help
+								$tasker_package_utils_exit_command 0
+								;;
+							help*)
+								tasker_package_utils_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
+								exit_tasker_package_utils_on_error "$command_type"
+								;;  
+							'' ) #"--" terminates argument processing to support non-options that convert_system_priv with dashes
+								tasker_package_utils_log_args "Parsing option: '--'"
+								break 
+								;; 
+							*)
+								tasker_package_utils_log_arg_errors "Unknown option '--${OPTARG%=*}'"
+								exit_tasker_package_utils_on_error "$command_type"
+								;;
+						esac
+						;;
+					h)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						show_tasker_package_utils_"$command_type"_help
+						$tasker_package_utils_exit_command 0
+						;;
+					v)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						if [ "$tasker_package_utils_verbose_level" -lt "2" ]; then 
+							tasker_package_utils_verbose_level=$((tasker_package_utils_verbose_level+1)); 
+						else 
+							tasker_package_utils_log_arg_errors "Invalid Option, max verbose level is 2"
+							exit_tasker_package_utils_on_error "$command_type" 
+						fi 
+						;;
+					d)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						conversion_mode="dirty"
+						;;
+					n)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						conversion_mode="normal"
+						;;	
+					\?)
+						tasker_package_utils_log_arg_errors "Unknown option: '-${OPTARG}'"
+						exit_tasker_package_utils_on_error "$command_type"
+						;;
+				esac
+			done
+			shift $((OPTIND -1)) #remove already processed arguments from argument list
+
+			#if conversion_mode is not set or passed
+			if [ -z "$conversion_mode" ]; then
+				tasker_package_utils_log_arg_errors "The '-d' or the '-n' option must be passed to set the conversion_mode"
+				$tasker_package_utils_exit_command 1
+			fi
+			;;
+		#parse options to the convert_user sub command
+		convert_user)
+			command_type="$sub_command"
+			tasker_package_utils_log_args "Parsing sub_command: '${sub_command}'"
+			optspec=":hvdn-:"
+			#process convert_user command options
+			while getopts "$optspec" opt; do
+				case ${opt} in
+					-)
+						long_optargs="${OPTARG#*=}"
+						case "${OPTARG}" in
+							help)
+								tasker_package_utils_log_args "Parsing option: '--${OPTARG%=*}'"
+								show_tasker_package_utils_"$command_type"_help
+								$tasker_package_utils_exit_command 0
+								;;
+							help*)
+								tasker_package_utils_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
+								exit_tasker_package_utils_on_error "$command_type"
+								;;  
+							'' ) #"--" terminates argument processing to support non-options that convert_user with dashes
+								tasker_package_utils_log_args "Parsing option: '--'"
+								break 
+								;; 
+							*)
+								tasker_package_utils_log_arg_errors "Unknown option '--${OPTARG%=*}'"
+								exit_tasker_package_utils_on_error "$command_type"
+								;;
+						esac
+						;;
+					h)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						show_tasker_package_utils_"$command_type"_help
+						$tasker_package_utils_exit_command 0
+						;;
+					v)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						if [ "$tasker_package_utils_verbose_level" -lt "2" ]; then 
+							tasker_package_utils_verbose_level=$((tasker_package_utils_verbose_level+1)); 
+						else 
+							tasker_package_utils_log_arg_errors "Invalid Option, max verbose level is 2"
+							exit_tasker_package_utils_on_error "$command_type" 
+						fi 
+						;;
+					d)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						conversion_mode="dirty"
+						;;
+					n)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						conversion_mode="normal"
+						;;	
+					\?)
+						tasker_package_utils_log_arg_errors "Unknown option: '-${OPTARG}'"
+						exit_tasker_package_utils_on_error "$command_type"
+						;;
+				esac
+			done
+			shift $((OPTIND -1)) #remove already processed arguments from argument list
+
+			#if conversion_mode is not set or passed
+			if [ -z "$conversion_mode" ]; then
+				tasker_package_utils_log_arg_errors "The '-d' or the '-n' option must be passed to set the conversion_mode"
+				$tasker_package_utils_exit_command 1
+			fi
+			;;  
+		#parse options to the uninstall sub command
+		uninstall)
+			command_type="$sub_command"
+			tasker_package_utils_log_args "Parsing sub_command: '${sub_command}'"
+			optspec=":hv-:"
+			#process uninstall command options
+			while getopts "$optspec" opt; do
+				case ${opt} in
+					-)
+						long_optargs="${OPTARG#*=}"
+						case "${OPTARG}" in
+							help)
+								tasker_package_utils_log_args "Parsing option: '--${OPTARG%=*}'"
+								show_tasker_package_utils_"$command_type"_help
+								$tasker_package_utils_exit_command 0
+								;;
+							help*)
+								tasker_package_utils_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
+								exit_tasker_package_utils_on_error "$command_type"
+								;;
+							'' ) #"--" terminates argument processing to support non-options that uninstall with dashes
+								tasker_package_utils_log_args "Parsing option: '--'"
+								break 
+								;; 
+							*)
+								tasker_package_utils_log_arg_errors "Unknown option '--${OPTARG%=*}'"
+								exit_tasker_package_utils_on_error "$command_type"
+								;;
+						esac
+						;;
+					h)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						show_tasker_package_utils_"$command_type"_help
+						$tasker_package_utils_exit_command 0
+						;;
+					v)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						if [ "$tasker_package_utils_verbose_level" -lt "2" ]; then 
+							tasker_package_utils_verbose_level=$((tasker_package_utils_verbose_level+1)); 
+						else 
+							tasker_package_utils_log_arg_errors "Invalid Option, max verbose level is 2"
+							exit_tasker_package_utils_on_error "$command_type"
+						fi 
+						;;  
+					\?)
+						tasker_package_utils_log_arg_errors "Unknown option: '-${OPTARG}'"
+						exit_tasker_package_utils_on_error "$command_type"
+						;;
+				esac
+			done
+			shift $((OPTIND -1)) #remove already processed arguments from argument list
+			;;
+		#parse options to the perms sub command
+		perms)
+			command_type="$sub_command"
+			tasker_package_utils_log_args "Parsing sub_command: '${sub_command}'"
+			optspec=":hvadr-:"
+			#process perms command options
+			while getopts "$optspec" opt; do
+				case ${opt} in
+					-)
+						long_optargs="${OPTARG#*=}"
+						case "${OPTARG}" in
+							help)
+								tasker_package_utils_log_args "Parsing option: '--${OPTARG%=*}'"
+								show_tasker_package_utils_"$command_type"_help
+								$tasker_package_utils_exit_command 0
+								;;
+							help*)
+								tasker_package_utils_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
+								exit_tasker_package_utils_on_error "$command_type"
+								;;
+							'' ) #"--" terminates argument processing to support non-options that perms with dashes
+								tasker_package_utils_log_args "Parsing option: '--'"
+								break 
+								;; 
+							*)
+								tasker_package_utils_log_arg_errors "Unknown option '--${OPTARG%=*}'"
+								exit_tasker_package_utils_on_error "$command_type"
+								;;
+						esac
+						;;
+					h)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						show_tasker_package_utils_"$command_type"_help
+						$tasker_package_utils_exit_command 0
+						;;
+					v)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						if [ "$tasker_package_utils_verbose_level" -lt "2" ]; then 
+							tasker_package_utils_verbose_level=$((tasker_package_utils_verbose_level+1)); 
+						else 
+							tasker_package_utils_log_arg_errors "Invalid Option, max verbose level is 2"
+							exit_tasker_package_utils_on_error "$command_type"
+						fi 
+						;;
+					a)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						run_mode="adb"
+						;;
+					d)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						run_mode="dev"
+						;;
+					r)
+						tasker_package_utils_log_args "Parsing option: '-${opt}'"
+						run_mode="adb_root"
+						;;
+					\?)
+						tasker_package_utils_log_arg_errors "Unknown option: '-${OPTARG}'"
+						exit_tasker_package_utils_on_error "$command_type"
+						;;
+				esac
+			done
+			shift $((OPTIND -1)) #remove already processed arguments from argument list
+
+			if [ $# -lt 1 ]; then
+				tasker_package_utils_log_arg_errors "Invalid number of args passed. \"tasker_package_utils perms\" command expects atleast 1 arg: perms_mode"
+				$tasker_package_utils_exit_command 1
+			fi
+
+			perms_mode="$(echo "$1")" #remove trailing newlines
+			shift 1 #remove perms_mode
+
+			#if perms_mode set is empty or not valid
+			if [ -z "$perms_mode" ] || \
+				[[ "$perms_mode" == *,* ]] || \
+					[[ ! ",grant,revoke,list," == *",$perms_mode,"* ]]; then
+				tasker_package_utils_log_arg_errors "The perms_mode  \"$perms_mode\" passed is invalid"
+				return 1
+			fi
+
+			#if perms_mode is "grant" or "revoke"
+			if [[ "$perms_mode" == "grant" ]] || [[ "$perms_mode" == "revoke" ]]; then
+				#if permissions passed, override the permissions_list array
+				if [ $# -ne 0 ]; then
+				    permissions_list=( "$@" )
+				fi
+			#if perms_mode is "list"
+			elif [[ "$perms_mode" == "list" ]]; then
+				if [ $# -ne 0 ]; then
+					tasker_package_utils_log_arg_errors "Invalid number of args passed. \"tasker_package_utils perms list\" command expects no args"
+					$tasker_package_utils_exit_command 1
+				fi
+			else
+				tasker_package_utils_log_arg_errors "perms_mode \"$perms_mode\" not handled"
+				$tasker_package_utils_exit_command 1
+			fi
+
+			shift $# #remove all remaining arguments from argument list
+			;;  
+		*)  
+			if [ ! -z "$sub_command" ]; then
+				tasker_package_utils_log_arg_errors "Unknown command type: '$sub_command'"
+			fi
+			exit_tasker_package_utils_on_error
+			;;
+	esac
+
+	#if a non-option argument is given to a sub_command
+	if [ $# -ne 0 ]; then
+		tasker_package_utils_log_arg_errors "Unknown option to \"$command_type\": '$1'"
+		$tasker_package_utils_exit_command 1
+	fi
+
+}
+
+show_tasker_package_utils_help () {
+
+echo "
+Usage:
+  tasker_package_utils [ -h | --help ]
+  tasker_package_utils [ --version ]
+  tasker_package_utils command [command_options]
+
+Available commands:
+  convert_system_priv     convert tasker user app to system privileged app
+  convert_user            convert tasker system privileged app to user app
+  uninstall               uninstall tasker
+  perms                   manage tasker permissions
+
+
+Use \"tasker_package_utils command [ -h | --help ]\" for more help about a command.
+"
+
+}
+
+show_tasker_package_utils_convert_system_priv_help () {
+
+echo "
+tasker_package_utils convert_system_priv command is used to convert tasker user app to system privileged app.
+
+
+Usage:
+  tasker_package_utils convert_system_priv [command_options] -d|n
+
+Available command_options:
+  [ -h | --help ]    display this help screen
+  [ -v | -vv ]       set verbose level to 1 or 2
+  [ -n ]             normal conversion mode
+  [ -d ]             dirty conversion mode
+
+
+If the 'n' option is passed, then normal conversion mode will be used and during conversion tasker will \
+be uninstalled and you will loose all tasker data and desktop shortcuts.
+
+If the 'd' option is passed, then dirty conversion mode will be used and during conversion tasker will \
+not be uninstalled and you will not loose any tasker data or desktop shortcuts but this can leave the \
+packages info of android system in an inconsistent state and you might have trouble uninstalling tasker \
+later.
+
+set verbose level to 1 or 2 to get more info when running tasker_package_utils names command.
+"
+
+}
+
+show_tasker_package_utils_convert_user_help () {
+
+echo "
+tasker_package_utils convert_user command is used to convert tasker system privileged app to user app.
+
+
+Usage:
+  tasker_package_utils convert_user [command_options] -d|n
+
+Available command_options:
+  [ -h | --help ]    display this help screen
+  [ -v | -vv ]       set verbose level to 1 or 2
+  [ -n ]             normal conversion mode
+  [ -d ]             dirty conversion mode
+
+
+The '-d' or the '-n' option must be passed to set the conversion_mode.
+
+
+set verbose level to 1 or 2 to get more info when running tasker_package_utils names command.
+"
+
+}
+
+show_tasker_package_utils_uninstall_help () {
+
+echo "
+tasker_package_utils uninstall command is used to uninstall tasker.
+Usage:
+  tasker_package_utils uninstall [command_options] tasker_config
+
+Available command_options:
+  [ -h | --help ]    display this help screen
+  [ -v | -vv ]       set verbose level to 1 or 2
+  
+
+set verbose level to 1 or 2 to get more info when running tasker_package_utils uninstall command.
+"
+
+}
+
+show_tasker_package_utils_perms_help () {
+
+echo "
+tasker_package_utils perms command is used manage tasker package permissions.
+Usage:
+  tasker_package_utils perms [command_options] grant|revoke|list
+  tasker_package_utils perms [command_options] grant|revoke permission_1 permission_2 ...
+
+Available command_options:
+  [ -h | --help ]    display this help screen
+  [ -v | -vv ]       set verbose level to 1 or 2
+  [ -a ]             run_mode adb
+  [ -d ]             run_mode dev [default]
+  [ -r ]             run_mode adb_root
+
+The first argument passed sets the perms_mode of the perms command and must be equal to 'grant', \
+'revoke' or 'list'.
+- 'grant' mode grants permissions to the tasker package
+- 'revoke' mode grants permissions to the tasker package
+- 'list' mode lists all permissions granted to the tasker package
+
+If no additional permission arguments are passed and perms_mode is 'grant' or 'revoke', then \
+all uncommented permissions in the permissions_array at the start of this script are granted \
+or revoked.
+
+If any permission that is processed does not contain a dot '.', then 'android.permission.' is \
+automatically prefixed to it.
+
+The options '-a', '-d' and '-r' set the run_mode of the perms command.
+- 'dev' if script is directly running on an android device like in termux
+- 'adb' if script is running on a computer and you want to run commands over adb
+- 'adb_root' if script is running on a computer and you want to run commands over adb with root
+
+The 'adb_root' run_mode might be needed in case you are getting permission denied errors while using \
+'adb' run_mode. The default run_mode is 'dev'.
+
+set verbose level to 1 or 2 to get more info when running tasker_package_utils perms command.
+"
+
+}
+
+exit_tasker_package_utils_on_error () {
+
+	if [ ! -z "$1" ] && [[ "$1" != *,* ]] && [[ ",convert_system_priv,convert_user,uninstall,perms," == *",$1,"* ]]; then
+		show_tasker_package_utils_"$1"_help
+	else
+		show_tasker_package_utils_help
+	fi
+	$tasker_package_utils_exit_command 1
+
+}
+
+#run tasker_package_utils_main function
+[[ x"${BASH_SOURCE[0]}" == x"$0" ]] && tasker_package_utils_main "$@"; $tasker_package_utils_exit_command 0;
