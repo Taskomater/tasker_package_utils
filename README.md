@@ -248,7 +248,7 @@ bash tasker_package_utils perms list | grep READ_LOGS
 ##
 
 
-##### Dependencies:
+### Dependencies:
 
 You should have GNU sed installed in your system.
 - Termux (non-root shell): `apt install sed`
@@ -257,7 +257,7 @@ You should have GNU sed installed in your system.
 ##
 
 
-##### Install Instructions For Termux In Android:
+### Install Instructions For Termux In Android:
 
 The `tasker_package_utils` file should be placed in termux `bin` directory `/data/data/com.termux/files/usr/bin` and it should have `termux` uid:gid ownership and have executable `700` permission before it can be run in the termux terminal without specifying its path.
 1. Copy the file to termux bin directory:
