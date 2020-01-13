@@ -1,6 +1,6 @@
 # tasker_package_utils
 
-This is a project to provide some utils related to [Tasker App] package.
+This is a project that provides bash util script(s) related to [Tasker App] package.
 ##
 
 
