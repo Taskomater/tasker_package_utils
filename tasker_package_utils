@@ -10,7 +10,7 @@
 #description:   various tasker package utils
 #author:        agnostic-apollo
 #usage:         run "bash tasker_package_utils --help"
-#date:          18-Dec-2019
+#date:          13-Jan-2020
 #bash version:  4.0 or higher
 #credits:       -
 #license:       MIT License
