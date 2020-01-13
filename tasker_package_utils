@@ -14,12 +14,13 @@
 #bash version:  4.0 or higher
 #credits:       -
 #license:       MIT License
-version=1.0
+version=0.1.0
 
 
-##### Install Instructions For Termux In Android:
 
-#The `tasker_package_utils` file should be placed in termux `bin` directory `/data/data/com.termux/files/usr/bin` and it should have `termux` uid:gid ownership and have executable `700` permission before it can be run in the termux terminal without specifying its path.
+### Install Instructions For Termux In Android:
+
+#The `tasker_package_utils` file should be placed in termux `bin` directory `/data/data/com.termux/files/usr/bin` and it should have `termux` `uid:gid` ownership and have executable `700` permission before it can be run in the termux terminal without specifying its path.
 #1. Copy the file to termux bin directory:
 #   Either `cd` to the download/extraction directory and run following commands
 #
@@ -41,7 +42,9 @@ version=1.0
 #You can run the script placed in the current directory without setting the ownership and permission by running the command `bash tasker_package_utils`.
 #If you are not running the script in termux, set the shebang of the script correctly (the first line of the script).
 
-#Usage:
+
+
+### Usage Examples:
 
 #Convert tasker user app to system privileged app in normal mode
 #this will uninstall tasker and you will loose all tasker data and desktop shortcuts
@@ -114,7 +117,8 @@ version=1.0
 #bash tasker_package_utils perms list | grep READ_LOGS
 
 
-#define user modifiable variables start
+
+### Set User Modifiable Variables Start
 
 #set permissions to grant or revoke
 #the permissions_list contains all permissions declared by tasker till version '5.9.rc.3'
@@ -197,11 +201,11 @@ declare -ga permissions_list=(
 #"net.dinglisch.android.zoom.permission.MAKE_CHANGES"
 )
 
-#define user modifiable variables end
+### Set User Modifiable Variables End
 
 
-#define default variables start
-#do not modify below values unless you know what you are doing
+### Set Default Variables Start
+#The following variables must not be modified unless you know what you are doing
 
 command_type="" #default to no command
 conversion_mode="" #default to none
@@ -223,7 +227,7 @@ system_priv_apk_install_path="/system/priv-app"
 android_packages_xml_file="/data/system/packages.xml"
 android_runtime_permissions_xml_file="/data/system/users/0/runtime-permissions.xml"
 
-#define default variables end
+### Set Default Variables End
 
 
 [[ x"${BASH_SOURCE[0]}" == x"$0" ]] && tasker_package_utils_exit_command="exit" || tasker_package_utils_exit_command="return"
@@ -922,7 +926,7 @@ process_tasker_package_utils_parameters () {
 								tasker_package_utils_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
 								exit_tasker_package_utils_on_error "$command_type"
 								;;  
-							'' ) #"--" terminates argument processing to support non-options that convert_system_priv with dashes
+							'' ) #"--" terminates argument processing to support non-options that start with dashes
 								tasker_package_utils_log_args "Parsing option: '--'"
 								break 
 								;; 
@@ -988,7 +992,7 @@ process_tasker_package_utils_parameters () {
 								tasker_package_utils_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
 								exit_tasker_package_utils_on_error "$command_type"
 								;;  
-							'' ) #"--" terminates argument processing to support non-options that convert_user with dashes
+							'' ) #"--" terminates argument processing to support non-options that start with dashes
 								tasker_package_utils_log_args "Parsing option: '--'"
 								break 
 								;; 
@@ -1054,7 +1058,7 @@ process_tasker_package_utils_parameters () {
 								tasker_package_utils_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
 								exit_tasker_package_utils_on_error "$command_type"
 								;;
-							'' ) #"--" terminates argument processing to support non-options that uninstall with dashes
+							'' ) #"--" terminates argument processing to support non-options that start with dashes
 								tasker_package_utils_log_args "Parsing option: '--'"
 								break 
 								;; 
@@ -1106,7 +1110,7 @@ process_tasker_package_utils_parameters () {
 								tasker_package_utils_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
 								exit_tasker_package_utils_on_error "$command_type"
 								;;
-							'' ) #"--" terminates argument processing to support non-options that perms with dashes
+							'' ) #"--" terminates argument processing to support non-options that start with dashes
 								tasker_package_utils_log_args "Parsing option: '--'"
 								break 
 								;; 
@@ -1151,7 +1155,7 @@ process_tasker_package_utils_parameters () {
 			shift $((OPTIND -1)) #remove already processed arguments from argument list
 
 			if [ $# -lt 1 ]; then
-				tasker_package_utils_log_arg_errors "Invalid number of args passed. \"tasker_package_utils perms\" command expects atleast 1 arg: perms_mode"
+				tasker_package_utils_log_arg_errors "Invalid parameter count. \"tasker_package_utils perms\" command expects at least 1 parameter: perms_mode"
 				$tasker_package_utils_exit_command 1
 			fi
 
@@ -1175,7 +1179,7 @@ process_tasker_package_utils_parameters () {
 			#if perms_mode is "list"
 			elif [[ "$perms_mode" == "list" ]]; then
 				if [ $# -ne 0 ]; then
-					tasker_package_utils_log_arg_errors "Invalid number of args passed. \"tasker_package_utils perms list\" command expects no args"
+					tasker_package_utils_log_arg_errors "Invalid parameter count. \"tasker_package_utils perms list\" command expects no parameters"
 					$tasker_package_utils_exit_command 1
 				fi
 			else

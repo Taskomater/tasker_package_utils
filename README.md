@@ -1,18 +1,81 @@
-# Tasker Package Utils
+# tasker_package_utils
 
-This is a project to provide some utils related to Tasker App package.
-
-### Downloads
-Download latest release from [here](https://github.com/Taskomater/Tasker-Package-Utils/releases).
+This is a project to provide some utils related to [Tasker App] package.
 ##
 
 
-### **`tasker_package_utils script:`**
+### Contents
+- [Compatibility](#Compatibility)
+- [Dependencies](#Dependencies)
+- [Downloads](#Downloads)
+- [Install Instructions For Termux In Android](#Install-Instructions-For-Termux-In-Android)
+- [tasker_package_utils Script Usage](#tasker_package_utils-Script-Usage)
+- [Current Features](#Current-Features)
+- [Planned Features](#Planned-Features)
+- [Issues](#Issues)
+- [Worthy Of Note](#Worthy-Of-Note)
+- [FAQs And FUQs](#FAQs-And-FUQs)
+- [Changelog](#Changelog)
+- [Contributions](#Contributions)
+##
 
-You can run the script placed in the current directory without setting the ownership and permission by running the command `bash tasker_package_utils`.
+
+### Compatibility
+
+- Android using [Termux App].
+- Linux distros.
+- Windows using [cygwin].
+##
+
+
+### Dependencies
+
+- Android users should install [Termux App].
+- Windows users should install [cygwin] and use cygwin shell to run scripts.
+- `GNU` variant of `sed` should be installed in your system.
+  - Termux (non-root shell): `apt install sed`
+  - Linux distros: `sudo apt install sed`
+  - Windows: It should ideally be installed by default with cygwin. If not, then run cygwin installer and search package and install.
+##
+
+
+### Downloads
+
+- [GitHub releases](https://github.com/Taskomater/tasker_package_utils/releases).
+##
+
+
+### Install Instructions For Termux In Android
+
+The `tasker_package_utils` file should be placed in termux `bin` directory `/data/data/com.termux/files/usr/bin` and it should have `termux` `uid:gid` ownership and have executable `700` permission before it can be run in the termux terminal without specifying its path.
+1. Copy the file to termux bin directory:
+  Either `cd` to the download/extraction directory and run following commands
+
+  ```
+  cat tasker_package_utils > /data/data/com.termux/files/usr/bin/tasker_package_utils
+  ```
+
+  Or use a file browser like root explorer to copy the file to the termux bin directory.
+
+2. Set correct ownership and permission:
+  Either run following commands to set them automatically, requires su binary to be in `$PATH`.
+
+  ```
+  export termux_bin_path="/data/data/com.termux/files/usr/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; for f in tasker_package_utils; do if [ -f "$termux_bin_path/$f" ]; then su -c "chown $owner:$owner \"$termux_bin_path/$f\" && chmod 700 \"$termux_bin_path/$f\""; fi; done;
+  ```
+
+  Or manually set them with your file browser. You can find `termux` `uid` and `gid` by running the command `id -u` in a non root shell in termux or by checking the properties of the termux `bin` directory from your file browser.
+##
+
+
+### tasker_package_utils Script Usage
+
+You may optionally run the script placed in the current directory without setting the ownership and permission by running the command `bash tasker_package_utils`.
 If you are not running the script in termux, set the shebang of the script correctly (the first line of the script).
 
-##### Usage:
+- **`tasker_package_utils`**
+
+##### Help:
 
 ```
 Usage:
@@ -34,9 +97,9 @@ Use \"tasker_package_utils command [ -h | --help ]\" for more help about a comma
 
 - **`tasker_package_utils convert_system_priv`**
 
-##### Usage:
-
 **`tasker_package_utils convert_system_priv`** command is used to convert tasker user app to system privileged app.
+
+##### Help:
 
 ```
 tasker_package_utils convert_system_priv command is used to convert tasker user app to system privileged app.
@@ -85,7 +148,7 @@ bash tasker_package_utils convert_system_priv -d
 
 **This is currently unsupported and will be implemented later.**
 
-##### Usage:
+##### Help:
 
 ```
 tasker_package_utils convert_user command is used to convert tasker system privileged app to user app.
@@ -120,7 +183,7 @@ bash tasker_package_utils convert_user
 
 **`tasker_package_utils uninstall`** command is used to to uninstall tasker. The tasker system privileged apk will also be removed provided that `tasker_package_utils convert_system_priv` command was used to install it as a system privileged app.
 
-##### Usage:
+##### Help:
 
 ```
 tasker_package_utils uninstall command is used to uninstall tasker.
@@ -148,7 +211,7 @@ bash tasker_package_utils uninstall
 
 **`tasker_package_utils perms`** command is used to manage tasker package permissions. This command supports the script to be run directly on the device itself in a root shell like in termux or to be run over adb.
 
-##### Usage:
+##### Help:
 
 ```
 tasker_package_utils perms command is used manage tasker package permissions.
@@ -248,35 +311,51 @@ bash tasker_package_utils perms list | grep READ_LOGS
 ##
 
 
-### Dependencies:
+### Current Features
 
-You should have GNU sed installed in your system.
-- Termux (non-root shell): `apt install sed`
-- Linux distros: `sudo apt install sed`
-- Windows: You can use cygwin installer.
+- Convert Tasker user app to system privileged app.
+- Uninstall Tasker
+- Grant/Revoke/List Tasker package permissions.
+- Run Commands in a root shell on the device or over adb with or without root.
 ##
 
 
-### Install Instructions For Termux In Android:
+### Planned Features
 
-The `tasker_package_utils` file should be placed in termux `bin` directory `/data/data/com.termux/files/usr/bin` and it should have `termux` uid:gid ownership and have executable `700` permission before it can be run in the termux terminal without specifying its path.
-1. Copy the file to termux bin directory:
-	Either `cd` to the download/extraction directory and run following commands
-
-	```
-	cat tasker_package_utils > /data/data/com.termux/files/usr/bin/tasker_package_utils
-	```
-
-	Or use a file browser like root explorer to copy the file to the termux bin directory.
-
-2. Set correct ownership and permission:
-	Either run following commands to set them automatically, requires su binary to be in `$PATH`.
-
-	```
-	export termux_bin_path="/data/data/com.termux/files/usr/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; for f in tasker_package_utils; do if [ -f "$termux_bin_path/$f" ]; then su -c "chown $owner:$owner \"$termux_bin_path/$f\" && chmod 700 \"$termux_bin_path/$f\""; fi; done;
-	```
-
-	Or manually set them with your file browser. You can find `termux` `uid` and `gid` by running the command `id -u` in a non root shell in termux or by checking the properties of the termux `bin` directory from your file browser.
-
-You may optionally run the script placed in the current directory without setting the ownership and permission by running the command `bash tasker_package_utils`.
+- Convert Tasker system privileged app to user app.
 ##
+
+
+### Issues
+
+`-`
+##
+
+
+### Worthy Of Note
+
+`-`
+##
+
+
+### FAQs And FUQs
+
+Check [FAQs_And_FUQs.md](FAQs_And_FUQs.md) file for the **Frequently Asked Questions(FAQs)** and **Frequently Unasked Questions(FUQs)**.
+##
+
+### Changelog
+
+Check [CHANGELOG.md](CHANGELOG.md) file for the **Changelog**.
+
+##
+
+
+### Contributions
+
+`-`
+##
+
+
+[Tasker App]: https://play.google.com/store/apps/details?id=net.dinglisch.android.taskerm
+[Termux App]: https://github.com/termux/termux-app
+[cygwin]: https://cygwin.com/index.html
